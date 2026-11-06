@@ -1,0 +1,17 @@
+html, body, #app {
+  height: 100%;
+  margin: 0;
+  background: #000;
+}
+
+#app {
+  padding: 0;
+  box-sizing: border-box;
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: url('/src/assets/fonts/JetBrainsMonoNerdFont-Regular.ttf') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+}
