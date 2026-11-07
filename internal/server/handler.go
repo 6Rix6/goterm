@@ -14,6 +14,7 @@ func (s *server) registerWSHandler(mux *http.ServeMux) {
 
 func (s *server) handleWS(w http.ResponseWriter, r *http.Request) {
 	if !checkOrigin(r, s.opt.AllowedOrigins) {
+		log.Println("connection error: not arrowd orign:", r.Host)
 		http.Error(w, "forbidden", http.StatusForbidden)
 		return
 	}

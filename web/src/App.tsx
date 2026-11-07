@@ -1,22 +1,22 @@
-import { Show } from 'solid-js'
-import Terminal from './terminal/XTerminal.tsx'
-import { TokenManager } from './auth/tokenManager'
+import "./style.css"
+import { Router, Route } from "@solidjs/router"
+import { TerminalPage } from "./pages/TerminalPage"
+import { HomePage } from "./pages/HomePage"
+import { ThemeProvider } from "./theme/ThemeProvider"
+import type { ParentProps } from "solid-js"
+import PrefsProvider from "./prefs/PrefsProvider"
 
-export function App() {
-  const token = TokenManager.get()
-
+export default function App() {
   return (
-    <Show when={token} fallback={<p class="msg">No token</p>}>
-      <Terminal token={token!} />
-    </Show>
+    <PrefsProvider>
+      <Router root={AppRoot}>
+        <Route path="/terminal" component={TerminalPage} />
+        <Route path="/" component={HomePage} />
+      </Router>
+    </PrefsProvider>
   )
 }
 
-export function Home() {
-  return (
-    <div>
-      <p style={{ "font-size": "60px", color: "white" }}>Home</p>
-      <a href='terminal' target='_blank'>terminal</a>
-    </div>
-  )
+function AppRoot(props: ParentProps) {
+  return <ThemeProvider>{props.children}</ThemeProvider>
 }

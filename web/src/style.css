@@ -1,7 +1,10 @@
-html, body, #app {
+html,
+body,
+#app {
   height: 100%;
   margin: 0;
-  background: #000;
+  background: var(--md-sys-color-surface);
+  color: var(--md-sys-color-on-surface);
 }
 
 #app {
@@ -10,8 +13,8 @@ html, body, #app {
 }
 
 @font-face {
-  font-family: 'JetBrains Mono';
-  src: url('/src/assets/fonts/JetBrainsMonoNerdFont-Regular.ttf') format('woff2');
+  font-family: "JetBrains Mono";
+  src: url("/src/assets/fonts/JetBrainsMonoNerdFont-Regular.ttf") format("woff2");
   font-weight: normal;
   font-style: normal;
 }

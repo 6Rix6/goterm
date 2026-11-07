@@ -57,7 +57,7 @@ func Serve(option *ServerOption) error {
 	mux.Handle("/", web.WebFsHandler())
 
 	addr := fmt.Sprintf("127.0.0.1:%d", option.Port)
-	log.Println("listening on http://" + addr + "/terminal/#token=" + token)
+	log.Println("listening on http://" + addr + "/terminal#token=" + token)
 	return http.ListenAndServe(addr, mux)
 }
 

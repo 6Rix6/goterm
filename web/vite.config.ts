@@ -1,27 +1,31 @@
-import { defineConfig } from "vite";
-import { VitePWA } from "vite-plugin-pwa";
-import solid from 'vite-plugin-solid'
+import { defineConfig } from "vite"
+import { VitePWA } from "vite-plugin-pwa"
+import solid from "vite-plugin-solid"
 
 export default defineConfig({
   server: {
     proxy: {
-      '/ws': {
-        target: 'ws://localhost:8080',
+      "/ws": {
+        target: "ws://localhost:8080/",
         rewriteWsOrigin: true,
         changeOrigin: true,
-        ws: true
+        ws: true,
       },
-      '/api': {
-        target: 'http://localhost:8080',
+      "/api": {
+        target: "http://localhost:8080/",
         changeOrigin: true,
-      }
-    }
+      },
+    },
   },
   plugins: [
     solid(),
     VitePWA({
       devOptions: { enabled: true },
       registerType: "autoUpdate",
+      workbox: {
+        globPatterns: ["**/*.{js,css,html,ico,png,svg,woff,woff2,ttf,eot}"],
+        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024 // 3MB, for cache font
+      },
       manifest: {
         name: "GoTerm",
         start_url: "./",
@@ -31,16 +35,14 @@ export default defineConfig({
         display_override: ["tabbed"],
         tab_strip: {
           home_tab: {
-            scope_patterns: [
-              { pathname: "./" }
-            ]
+            scope_patterns: [{ pathname: "./" }],
           },
           new_tab_button: {
-            url: "terminal"
-          }
+            url: "terminal",
+          },
         },
-        theme_color: "#ededed",
-        background_color: "#ffffff",
+        // theme_color: "#00000000",
+        // background_color: "#ffffff",
         icons: [
           {
             sizes: "512x512",
@@ -51,5 +53,4 @@ export default defineConfig({
       },
     }),
   ],
-});
-
+})
