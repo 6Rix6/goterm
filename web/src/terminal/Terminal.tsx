@@ -1,21 +1,22 @@
 import { onCleanup, onMount } from "solid-js"
 import { TerminalSocket, type Status } from "./terminalSocket"
 import { TerminalView, type Disposable } from "./view/terminalView"
-import { XtermView } from "./view/xtermlView"
+import { delayedScheduler } from "../common/helpers"
 
 export type { Status }
 
 type Props = {
   token: string
+  sessionId?: string
   onStatus?: (s: Status) => void
-  createView?: () => TerminalView
+  createView: () => TerminalView
 }
 
-export default function Terminal(props: Props) {
+export function Terminal(props: Props) {
   let container!: HTMLDivElement
 
   onMount(() => {
-    const view = props.createView?.() ?? new XtermView()
+    const view = props.createView()
     let socket: TerminalSocket | undefined
     let input: Disposable | undefined
     let ro: ResizeObserver | undefined
@@ -30,7 +31,7 @@ export default function Terminal(props: Props) {
     })
 
     // @ts-ignore
-    window.view = view;
+    window.view = view
 
     void (async () => {
       await view.mount(container)
@@ -38,24 +39,24 @@ export default function Terminal(props: Props) {
 
       socket = new TerminalSocket({
         token: props.token,
+        sessionId: props.sessionId,
         getSize: () => view.fit(),
         onOpen: () => view.focus(),
         onData: (d) => view.write(d),
-        onStatus: (s) => {
-          props.onStatus?.(s)
-          if (s === "disconnected" || s === "unauthorized") view.write("[disconnected]")
-        },
+        onStatus: (s) => props.onStatus?.(s),
       })
 
       input = view.onInput((d) => socket!.sendInput(d))
 
-      ro = new ResizeObserver(() => {
+      const scheduleFit = delayedScheduler(() => {
         const { cols, rows } = view.fit()
         socket!.sendResize(cols, rows)
-      })
-      ro.observe(container)
+      }, 250)
+
+      ro = new ResizeObserver(() => scheduleFit())
+      ro?.observe(container)
     })()
   })
 
-  return <div ref={container} class="term" style={{ height: "100%" }} />
+  return <div ref={container} class="term" />
 }

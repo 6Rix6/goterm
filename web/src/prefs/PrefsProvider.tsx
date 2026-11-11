@@ -24,7 +24,7 @@ export function usePref<K extends keyof Prefs>(key: K) {
   return [value, (v: Prefs[K]) => m.set(key, v)] as const
 }
 
-export default function PrefsProvider(props: ParentProps<PrefsProviderProps>) {
+export function PrefsProvider(props: ParentProps<PrefsProviderProps>) {
   const storage = new LocalPrefsStorage(props.storage)
   const prefs = new PreferenceManager(storage, props.prefix)
 

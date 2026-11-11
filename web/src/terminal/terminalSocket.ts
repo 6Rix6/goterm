@@ -2,6 +2,7 @@ export type Status = "connecting" | "connected" | "disconnected" | "unauthorized
 
 type Options = {
   token: string
+  sessionId?: string
   onOpen?: () => void
   onData?: (data: Uint8Array) => void
   onStatus?: (s: Status) => void
@@ -20,7 +21,7 @@ export class TerminalSocket {
 
     this.#ws.onopen = () => {
       const { cols, rows } = opts.getSize()
-      this.sendJson({ type: "init", token: opts.token, cols, rows })
+      this.sendJson({ type: "init", token: opts.token, cols, rows, session_id: opts.sessionId })
       opts.onStatus?.("connected")
       opts.onOpen?.()
     }

@@ -1,5 +1,4 @@
 import { Terminal as XTerm } from "@xterm/xterm"
-import { FitAddon } from "@xterm/addon-fit"
 import { Unicode11Addon } from "@xterm/addon-unicode11"
 import { WebglAddon } from "@xterm/addon-webgl"
 import "@xterm/xterm/css/xterm.css"
@@ -9,43 +8,60 @@ import {
   type TerminalSize,
   type TerminalViewOptions,
 } from "./terminalView"
+import type { PreferenceManager, PreferenceObserver } from "../../prefs/preferenceManager"
+import type { Prefs } from "../../prefs/schema"
+import { getPref } from "../../prefs/typed"
 
 type XtermViewOptions = TerminalViewOptions & {
   webgl?: boolean
 }
 
-const DEFAULT_FONT_FAMILY = '"JetBrains Mono", Menlo, Consolas, "DejaVu Sans Mono", monospace'
+const DEFAULT_FONT_FAMILY = `"JetBrains Mono", Menlo, Consolas, "DejaVu Sans Mono", monospace`
 
 export class XtermView extends TerminalView {
   #term?: XTerm
-  #fitAddon = new FitAddon()
+  #container?: HTMLElement
   #disposed = false
-
   #opts: XtermViewOptions
+  #prefsManager: PreferenceManager
+  #prefsObservers: {
+    [K in keyof Prefs]?: PreferenceObserver
+  } = {}
 
-  constructor(opts: XtermViewOptions = {}) {
+  constructor(prefsManager: PreferenceManager, opts: XtermViewOptions) {
     super()
 
+    this.#prefsManager = prefsManager
     this.#opts = opts
   }
 
   async mount(container: HTMLElement): Promise<void> {
-    const fontSize = this.#opts.fontSize ?? 15
+    this.#container = container
 
-    await Promise.all([
-      document.fonts.load(`${fontSize}px "JetBrains Mono"`),
-      document.fonts.load(`bold ${fontSize}px "JetBrains Mono"`),
-    ])
-    await document.fonts.ready
+    const fontSize = this.#opts.fontSize ?? this.#getPref("terminal.fontSize")
+
+    try {
+      await Promise.all([
+        document.fonts.load(`${fontSize}px "JetBrains Mono"`),
+        document.fonts.load(`bold ${fontSize}px "JetBrains Mono"`),
+      ])
+      await document.fonts.ready
+    } catch {}
 
     if (this.#disposed) return
 
     const term = new XTerm({
+      rescaleOverlappingGlyphs: true,
       allowProposedApi: true,
-      cursorBlink: true,
+      cursorBlink: this.#getPref("terminal.cursorBlink"),
       fontFamily: this.#opts.fontFamily ?? DEFAULT_FONT_FAMILY,
       fontSize,
+      lineHeight: this.#getPref("terminal.lineHeight"),
+      letterSpacing: 0,
       allowTransparency: true,
+      scrollbar: {
+        showScrollbar: this.#getPref("terminal.showScrollbar"),
+      },
       theme: {
         cursorAccent: "rgba(0, 0, 0, 0)",
         selectionBackground: "rgba(174, 203, 250, .6)",
@@ -73,15 +89,22 @@ export class XtermView extends TerminalView {
       },
     })
 
-    term.loadAddon(this.#fitAddon)
     term.loadAddon(new Unicode11Addon())
     term.open(container)
     term.unicode.activeVersion = "11"
-    this.#fitAddon.fit()
+    this.fit()
 
     if (this.#isWebglSupported() && this.#opts.webgl) {
       term.loadAddon(new WebglAddon())
     }
+
+    this.#observPref("terminal.fontSize", (v) => (term.options = { fontSize: v }))
+    this.#observPref("terminal.lineHeight", (v) => (term.options = { lineHeight: v }))
+    this.#observPref("terminal.cursorBlink", (v) => (term.options = { cursorBlink: v }))
+    this.#observPref(
+      "terminal.showScrollbar",
+      (v) => (term.options = { scrollbar: { showScrollbar: v } }),
+    )
 
     this.#term = term
   }
@@ -95,9 +118,24 @@ export class XtermView extends TerminalView {
   }
 
   fit(): TerminalSize {
-    if (!this.#term) return { cols: 80, rows: 24 }
-    this.#fitAddon.fit()
-    return { cols: this.#term.cols, rows: this.#term.rows }
+    if (!this.#term || !this.#container) return { cols: 80, rows: 24 }
+
+    const screenPaddingSize = 0.0
+    const cellDimensions = this.#term.dimensions?.css.cell
+
+    if (!cellDimensions) return { cols: 80, rows: 24 }
+
+    const calc = (size: number, cellSize: number) => {
+      return Math.floor((size - 2 * screenPaddingSize) / cellSize)
+    }
+    const cols = calc(this.#container.offsetWidth, cellDimensions.width)
+    const rows = calc(this.#container.offsetHeight, cellDimensions.height)
+
+    if (cols >= 0 && rows >= 0) {
+      this.#term.resize(cols, rows)
+    }
+
+    return { cols, rows }
   }
 
   onInput(cb: (data: string) => void): Disposable {
@@ -108,9 +146,38 @@ export class XtermView extends TerminalView {
     this.#disposed = true
     this.#term?.dispose()
     this.#term = undefined
+
+    for (const [k, o] of Object.entries(this.#prefsObservers)) {
+      this.#prefsManager.removeObserver(k, o)
+    }
   }
 
   #isWebglSupported() {
     return document.createElement("canvas").getContext("webgl2")
+  }
+
+  #observPref<K extends keyof Prefs>(key: K, onChanged: (value: Prefs[K]) => void) {
+    if (this.#prefsObservers[key]) {
+      this.#removeObserver(key)
+    }
+
+    const observer: PreferenceObserver = (value: unknown) => {
+      onChanged(value as Prefs[K])
+    }
+
+    this.#prefsManager.addObserver(key, observer)
+    this.#prefsObservers[key] = observer
+  }
+
+  #removeObserver<K extends keyof Prefs>(key: K) {
+    const observer = this.#prefsObservers[key]
+    if (observer) {
+      this.#prefsManager.removeObserver(key, observer)
+      delete this.#prefsObservers[key]
+    }
+  }
+
+  #getPref<K extends keyof Prefs>(key: K) {
+    return getPref(this.#prefsManager, key)
   }
 }

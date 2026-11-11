@@ -33,7 +33,7 @@ func handshakeWS(conn *websocket.Conn, token string) (*controlMsg, error) {
 	if !compareTokens(token, c.Token) {
 		return nil, errors.New("unauthorized")
 	}
-	if c.Cols == 0 || c.Rows == 0 {
+	if c.Cols <= 0 || c.Rows <= 0 {
 		return nil, errors.New("invalid size")
 	}
 

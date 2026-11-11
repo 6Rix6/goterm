@@ -24,7 +24,7 @@ export default defineConfig({
       registerType: "autoUpdate",
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff,woff2,ttf,eot}"],
-        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024 // 3MB, for cache font
+        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024, // 3MB, for caching font
       },
       manifest: {
         name: "GoTerm",
@@ -41,13 +41,18 @@ export default defineConfig({
             url: "terminal",
           },
         },
-        // theme_color: "#00000000",
-        // background_color: "#ffffff",
         icons: [
           {
             sizes: "512x512",
             src: "icon-512.png",
             type: "image/png",
+            purpose: "any maskable",
+          },
+          {
+            sizes: "512x512",
+            src: "icon-monochrome-512.png",
+            type: "image/png",
+            purpose: "monochrome",
           },
         ],
       },

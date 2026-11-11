@@ -3,37 +3,7 @@
 // found in the LICENSE file.
 
 import type { PrefsStorage, StorageChange } from "./prefsStorage"
-
-/**
- * Verify |condition| is truthy else throw Error.
- *
- * @param condition A condition to check.
- */
-function assert(condition: unknown, msg?: string): asserts condition {
-  if (!condition) throw new Error(msg)
-}
-
-/**
- * Get a random integer in a range (inclusive).
- *
- * @param min The lowest integer in the range.
- * @param max The highest integer in the range.
- * @return A random number between min & max.
- */
-function randomInt(min: number, max: number) {
-  return Math.floor(Math.random() * (max - min + 1)) + min
-}
-
-/**
- * Left pad a number to a given length with leading zeros.
- *
- * @param number The number to pad.
- * @param length The desired length.
- * @return The padded number as a string.
- */
-function zpad(number: string | number, length: number) {
-  return String(number).padStart(length, "0")
-}
+import { assert, zpad, randomInt } from "../common/helpers"
 
 /**
  * Used internally to indicate that the current value of the preference should

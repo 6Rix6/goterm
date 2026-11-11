@@ -14,7 +14,7 @@ func (s *server) registerAPI(mux *http.ServeMux) {
 	mux.HandleFunc("DELETE /api/sessions/{id}", s.auth(s.handleDeleteSession))
 }
 
-// auth は Authorization: Bearer <token> を検証する。
+// Validates Authorization: Bearer <token>.
 func (s *server) auth(next http.HandlerFunc) http.HandlerFunc {
 	const prefix = "Bearer "
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -62,7 +62,7 @@ func (s *server) handlePatchSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 解除により破棄された場合は 204 を返す
+	// Returns 204 if the session destroyed by revocation
 	sess, err := s.sessions.Get(id)
 	if err != nil {
 		w.WriteHeader(http.StatusNoContent)

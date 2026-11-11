@@ -3,10 +3,10 @@ import { Router, Route } from "@solidjs/router"
 import { TerminalPage } from "./pages/TerminalPage"
 import { HomePage } from "./pages/HomePage"
 import { ThemeProvider } from "./theme/ThemeProvider"
-import type { ParentProps } from "solid-js"
-import PrefsProvider from "./prefs/PrefsProvider"
+import { type ParentProps } from "solid-js"
+import { PrefsProvider } from "./prefs/PrefsProvider"
 
-export default function App() {
+export function App() {
   return (
     <PrefsProvider>
       <Router root={AppRoot}>
