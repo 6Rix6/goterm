@@ -1,8 +1,8 @@
 import { Show } from "solid-js"
-import { XtermView } from "../terminal/view/xtermlView"
-import { Terminal } from "../terminal/Terminal"
-import { TokenManager } from "../auth/tokenManager"
-import { usePrefs } from "../prefs/PrefsProvider"
+import { XtermView } from "../../terminal/view/xtermlView"
+import { Terminal } from "../../terminal/Terminal"
+import { TokenManager } from "../../auth/tokenManager"
+import { usePrefs } from "../../prefs/PrefsProvider"
 
 export const SESSION_ID_KEY = "session"
 

@@ -48,18 +48,29 @@ func (s *server) handleListSessions(w http.ResponseWriter, r *http.Request) {
 
 func (s *server) handlePatchSession(w http.ResponseWriter, r *http.Request) {
 	var body struct {
-		Pinned *bool `json:"pinned"`
+		Pinned *bool   `json:"pinned"`
+		Title  *string `json:"title"`
 	}
 	r.Body = http.MaxBytesReader(w, r.Body, 1024)
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.Pinned == nil {
-		http.Error(w, `body must be {"pinned": bool}`, http.StatusBadRequest)
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		http.Error(w, `body must be {"pinned"?: bool, "title"?: string}`, http.StatusBadRequest)
 		return
 	}
 
 	id := r.PathValue("id")
-	if err := s.sessions.SetPinned(id, *body.Pinned); err != nil {
-		writeSessionError(w, err)
-		return
+
+	if body.Title != nil {
+		if err := s.sessions.SetTitle(id, *body.Title); err != nil {
+			writeSessionError(w, err)
+			return
+		}
+	}
+
+	if body.Pinned != nil {
+		if err := s.sessions.SetPinned(id, *body.Pinned); err != nil {
+			writeSessionError(w, err)
+			return
+		}
 	}
 
 	// Returns 204 if the session destroyed by revocation
@@ -68,6 +79,17 @@ func (s *server) handlePatchSession(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
+
+	info := sess.Info()
+	if body.Title != nil || body.Pinned != nil {
+		sess.NotifyAttached(controlMsg{
+			Type:         msgSession,
+			SessionID:    info.ID,
+			SessionTitle: info.Title,
+			Pinned:       info.Pinned,
+		})
+	}
+
 	writeJSON(w, http.StatusOK, sess.Info())
 }
 

@@ -2,6 +2,7 @@ import { createResource, type ResourceReturn } from "solid-js"
 
 export interface PTYSession {
   id: string
+  title?: string
   createdAt: Date
   pinned: boolean
   attached: boolean
@@ -9,6 +10,7 @@ export interface PTYSession {
 
 interface PTYSessionDTO {
   id: string
+  title?: string
   created_at: string // RFC3339
   pinned: boolean
   attached: boolean
@@ -16,6 +18,7 @@ interface PTYSessionDTO {
 
 const toSession = (dto: PTYSessionDTO): PTYSession => ({
   id: dto.id,
+  title: dto.title,
   createdAt: new Date(dto.created_at),
   pinned: dto.pinned,
   attached: dto.attached,
@@ -33,11 +36,12 @@ export class SessionManager {
         throw new Error(`GET /api/sessions failed: ${res.status} ${res.statusText}`)
       }
       const body = (await res.json()) as { sessions: PTYSessionDTO[] }
+      console.log(body)
       return body.sessions.map(toSession)
     })
   }
 
-  get sessions(): readonly PTYSession[] {
+  get sessions(): PTYSession[] {
     return this.#resource[0].latest ?? []
   }
 
@@ -58,11 +62,19 @@ export class SessionManager {
   }
 
   pin(id: string) {
-    return this.#setPinned(id, true)
+    return this.setPinned(id, true)
   }
 
   unpin(id: string) {
-    return this.#setPinned(id, false)
+    return this.setPinned(id, false)
+  }
+
+  async setTitle(id: string, title: string) {
+    await this.#patch(id, { title })
+  }
+
+  async setPinned(id: string, pinned: boolean) {
+    await this.#patch(id, { pinned })
   }
 
   async delete(id: string): Promise<void> {
@@ -77,11 +89,25 @@ export class SessionManager {
     throw new Error(`DELETE /api/sessions/${id} failed: ${res.status} ${res.statusText}`)
   }
 
-  async #setPinned(id: string, pinned: boolean): Promise<PTYSession | null> {
+  #remove(id: string) {
+    this.#resource[1].mutate((list) => list?.filter((s) => s.id !== id))
+  }
+
+  #request(path: string, init: RequestInit = {}): Promise<Response> {
+    return fetch(`//${location.host}/api${path}`, {
+      ...init,
+      headers: {
+        ...init.headers,
+        Authorization: `Bearer ${this.#token}`,
+      },
+    })
+  }
+
+  async #patch(id: string, body: { pinned?: boolean; title?: string }) {
     const res = await this.#request(`/sessions/${encodeURIComponent(id)}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ pinned }),
+      body: JSON.stringify(body),
     })
 
     switch (res.status) {
@@ -99,19 +125,5 @@ export class SessionManager {
       default:
         throw new Error(`PATCH /api/sessions/${id} failed: ${res.status} ${res.statusText}`)
     }
-  }
-
-  #remove(id: string) {
-    this.#resource[1].mutate((list) => list?.filter((s) => s.id !== id))
-  }
-
-  #request(path: string, init: RequestInit = {}): Promise<Response> {
-    return fetch(`//${location.host}/api${path}`, {
-      ...init,
-      headers: {
-        ...init.headers,
-        Authorization: `Bearer ${this.#token}`,
-      },
-    })
   }
 }

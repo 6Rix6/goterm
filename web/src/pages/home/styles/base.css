@@ -1,0 +1,26 @@
+a {
+  text-decoration: none;
+}
+
+button {
+  background: inherit;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  text-align: inherit;
+}
+
+h3 {
+  flex: 1 1 0%;
+  font-size: 16px;
+  font-weight: 500;
+  margin: 0;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.nowrap {
+  white-space: nowrap;
+}

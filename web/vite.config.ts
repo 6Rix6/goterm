@@ -31,6 +31,7 @@ export default defineConfig({
         start_url: "./",
         short_name: "GoTerm",
         display: "standalone",
+        background_color: "#1C1C1C",
         // @ts-ignore
         display_override: ["tabbed"],
         tab_strip: {

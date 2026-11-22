@@ -1,6 +1,3 @@
-/*
-Copyright © 2026 6Rix6
-*/
 package cmd
 
 import (
@@ -15,34 +12,35 @@ var (
 	allowedHosts []string
 	newToken     bool
 	shell        string
-	args         []string
+	shellArgs    []string
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "goterm",
-	Short: "A brief description of your application",
-	RunE: func(cmd *cobra.Command, args []string) error {
+	Use:          "goterm",
+	Short:        "Web-based terminal server",
+	Long:         "goterm serves a web-based terminal over WebSocket.",
+	SilenceUsage: true,
+	RunE: func(cmd *cobra.Command, _ []string) error {
 		return server.Serve(&server.ServerOption{
 			Port:           port,
 			AllowedOrigins: allowedHosts,
 			NewToken:       newToken,
 			Shell:          shell,
-			Args:           args,
+			Args:           shellArgs,
 		})
 	},
 }
 
 func Execute() {
-	err := rootCmd.Execute()
-	if err != nil {
+	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
 }
 
 func init() {
 	rootCmd.Flags().IntVar(&port, "port", 8080, "Port to listen on")
-	rootCmd.Flags().StringArrayVar(&allowedHosts, "allowed-hosts", []string{}, "Allowed hosts")
-	rootCmd.Flags().BoolVar(&newToken, "new-token", false, "Generate new token")
-	rootCmd.Flags().StringVar(&shell, "shell", "", "Shell")
-	rootCmd.Flags().StringArrayVar(&args, "args", []string{}, "Shell args")
+	rootCmd.Flags().StringArrayVar(&allowedHosts, "allowed-hosts", []string{}, "Additional hosts allowed to connect (repeatable)")
+	rootCmd.Flags().BoolVar(&newToken, "new-token", false, "Generate a new auth token and replace the saved one")
+	rootCmd.Flags().StringVar(&shell, "shell", "", "Shell to run in each session (default: auto-detected)")
+	rootCmd.Flags().StringArrayVar(&shellArgs, "args", []string{}, "Arguments passed to the shell (repeatable)")
 }

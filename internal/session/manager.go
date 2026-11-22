@@ -14,6 +14,7 @@ var ErrSessionNotFound = errors.New("session not found")
 type SessionInfo struct {
 	ID        string    `json:"id"`
 	CreatedAt time.Time `json:"created_at"`
+	Title     string    `json:"title,omitempty"`
 	Pinned    bool      `json:"pinned"`
 	Attached  bool      `json:"attached"`
 }
@@ -38,7 +39,6 @@ func (m *SessionManager) Create(size *pty.Winsize) (*PTYSession, error) {
 	m.sessions[sess.ID] = sess
 	m.mu.Unlock()
 
-	// シェルが自然終了したらmapからも消す
 	go func() {
 		<-sess.Done()
 		m.remove(sess)
@@ -76,8 +76,8 @@ func (m *SessionManager) List() []SessionInfo {
 	return list
 }
 
-// SetPinned はピン留めを切り替える。
-// 解除時にクライアントが繋がっていなければ、デフォルト挙動に従い破棄する。
+// Toggle the pin.
+// If the client is not connected when unpinning, destroy the session.
 func (m *SessionManager) SetPinned(id string, pinned bool) error {
 	sess, err := m.Get(id)
 	if err != nil {
@@ -90,6 +90,15 @@ func (m *SessionManager) SetPinned(id string, pinned bool) error {
 	return nil
 }
 
+func (m *SessionManager) SetTitle(id string, title string) error {
+	sess, err := m.Get(id)
+	if err != nil {
+		return err
+	}
+	sess.setTitle(title)
+	return nil
+}
+
 func (m *SessionManager) Delete(id string) error {
 	m.mu.Lock()
 	sess, ok := m.sessions[id]
@@ -98,10 +107,9 @@ func (m *SessionManager) Delete(id string) error {
 	if !ok {
 		return ErrSessionNotFound
 	}
-	return sess.Close() // 接続中のクライアントはreadLoop終了時に切断される
+	return sess.Close()
 }
 
-// Detach はWS切断時に呼ぶ。現在のクライアントが外れ、かつピン留めされていなければ破棄。
 func (m *SessionManager) Detach(sess *PTYSession, sink Sink) {
 	wasCurrent, pinned := sess.detach(sink)
 	if wasCurrent && !pinned {

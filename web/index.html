@@ -2,8 +2,36 @@
 <html>
   <head>
     <meta charset="UTF-8">
-    <link rel="icon" type="image/svg+xml" href="/favicon-light.svg" media="(prefers-color-scheme: light)">
-    <link rel="icon" type="image/svg+xml" href="/favicon-dark.svg" media="(prefers-color-scheme: dark)">
+    <script>
+    ;(function () {
+      const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)").matches
+      const systemTheme = prefersDarkScheme ? "dark" : "light"
+      const storedTheme = localStorage.getItem("/theme.mode")
+      const theme = storedTheme ?? systemTheme
+
+      const el = document.documentElement
+
+      el.dataset.theme = theme
+      el.style.colorScheme = theme
+
+      metaColorSchema = document.createElement("meta")
+      metaColorSchema.name = "color-scheme"
+      document.head.appendChild(metaColorSchema)
+      metaColorSchema.content = theme
+    })()
+    </script>
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="/favicon-light.svg"
+      media="(prefers-color-scheme: light)"
+    >
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="/favicon-dark.svg"
+      media="(prefers-color-scheme: dark)"
+    >
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GoTerm</title>
   </head>

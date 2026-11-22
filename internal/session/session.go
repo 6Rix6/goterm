@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/creack/pty"
@@ -24,12 +25,14 @@ type SessionConfig struct {
 
 type Sink interface {
 	Send(p []byte) error
+	SendControl(v any) error
 	Close() error
 }
 
 type PTYSession struct {
 	ID        string
 	CreatedAt time.Time
+	title     string
 
 	cmd  *exec.Cmd
 	ptmx *os.File
@@ -142,12 +145,19 @@ func (s *PTYSession) setPinned(pinned bool) (attached bool) {
 	return s.sink != nil
 }
 
+func (s *PTYSession) setTitle(title string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.title = title
+}
+
 func (s *PTYSession) Info() SessionInfo {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return SessionInfo{
 		ID:        s.ID,
 		CreatedAt: s.CreatedAt,
+		Title:     s.title,
 		Pinned:    s.pinned,
 		Attached:  s.sink != nil,
 	}
@@ -159,11 +169,44 @@ func (s *PTYSession) Resize(cols, rows uint16) error {
 	return pty.Setsize(s.ptmx, &pty.Winsize{Cols: cols, Rows: rows})
 }
 
+// NotifyAttached sends v to the attached sink, if any.
+// Returns true if a sink was attached.
+func (s *PTYSession) NotifyAttached(v any) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.sink == nil {
+		return false
+	}
+	if err := s.sink.SendControl(v); err != nil {
+		_ = s.sink.Close()
+		s.sink = nil
+		return false
+	}
+	return true
+}
+
 func (s *PTYSession) Close() error {
 	s.closeOnce.Do(func() {
 		s.closeErr = s.ptmx.Close()
-		_ = s.cmd.Process.Kill()
-		_ = s.cmd.Wait()
+
+		p := s.cmd.Process
+		if p == nil {
+			return
+		}
+		_ = syscall.Kill(-p.Pid, syscall.SIGHUP)
+
+		waitCh := make(chan struct{})
+		go func() {
+			_ = s.cmd.Wait()
+			close(waitCh)
+		}()
+
+		select {
+		case <-waitCh:
+		case <-time.After(2 * time.Second):
+			_ = syscall.Kill(-p.Pid, syscall.SIGKILL)
+			<-waitCh
+		}
 	})
 	return s.closeErr
 }

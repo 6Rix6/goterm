@@ -8,9 +8,9 @@ import {
   type TerminalSize,
   type TerminalViewOptions,
 } from "./terminalView"
-import type { PreferenceManager, PreferenceObserver } from "../../prefs/preferenceManager"
-import type { Prefs } from "../../prefs/schema"
-import { getPref } from "../../prefs/typed"
+import { TerminalIO } from "../io/terminalIO.ts"
+import type { PreferenceManager } from "../../prefs/preferenceManager"
+import { PrefObserverGroup } from "../../prefs/prefObserverGroup.ts"
 
 type XtermViewOptions = TerminalViewOptions & {
   webgl?: boolean
@@ -23,22 +23,25 @@ export class XtermView extends TerminalView {
   #container?: HTMLElement
   #disposed = false
   #opts: XtermViewOptions
-  #prefsManager: PreferenceManager
-  #prefsObservers: {
-    [K in keyof Prefs]?: PreferenceObserver
-  } = {}
+  #io: TerminalIO
+  #prefs: PrefObserverGroup
 
   constructor(prefsManager: PreferenceManager, opts: XtermViewOptions) {
     super()
 
-    this.#prefsManager = prefsManager
+    this.#prefs = new PrefObserverGroup(prefsManager)
     this.#opts = opts
+    this.#io = new TerminalIO({
+      ctrlVPaste: () => this.#prefs.get("terminal.keybind.ctrl-v-paste"),
+      ctrlCCopy: () => this.#prefs.get("terminal.keybind.ctrl-c-copy"),
+      rightClick: () => this.#prefs.get("terminal.mouse.rightClick"),
+    })
   }
 
   async mount(container: HTMLElement): Promise<void> {
     this.#container = container
 
-    const fontSize = this.#opts.fontSize ?? this.#getPref("terminal.fontSize")
+    const fontSize = this.#opts.fontSize ?? this.#prefs.get("terminal.appearance.fontSize")
 
     try {
       await Promise.all([
@@ -53,14 +56,14 @@ export class XtermView extends TerminalView {
     const term = new XTerm({
       rescaleOverlappingGlyphs: true,
       allowProposedApi: true,
-      cursorBlink: this.#getPref("terminal.cursorBlink"),
+      cursorBlink: this.#prefs.get("terminal.appearance.cursorBlink"),
       fontFamily: this.#opts.fontFamily ?? DEFAULT_FONT_FAMILY,
       fontSize,
-      lineHeight: this.#getPref("terminal.lineHeight"),
+      lineHeight: this.#prefs.get("terminal.appearance.lineHeight"),
       letterSpacing: 0,
       allowTransparency: true,
       scrollbar: {
-        showScrollbar: this.#getPref("terminal.showScrollbar"),
+        showScrollbar: this.#prefs.get("terminal.appearance.showScrollbar"),
       },
       theme: {
         cursorAccent: "rgba(0, 0, 0, 0)",
@@ -89,20 +92,29 @@ export class XtermView extends TerminalView {
       },
     })
 
+    term.onTitleChange((title) => {
+      document.title = title
+    })
+
     term.loadAddon(new Unicode11Addon())
     term.open(container)
     term.unicode.activeVersion = "11"
+
+    this.#io.attach(term)
     this.fit()
 
     if (this.#isWebglSupported() && this.#opts.webgl) {
       term.loadAddon(new WebglAddon())
     }
 
-    this.#observPref("terminal.fontSize", (v) => (term.options = { fontSize: v }))
-    this.#observPref("terminal.lineHeight", (v) => (term.options = { lineHeight: v }))
-    this.#observPref("terminal.cursorBlink", (v) => (term.options = { cursorBlink: v }))
-    this.#observPref(
-      "terminal.showScrollbar",
+    this.#prefs.observe("terminal.appearance.fontSize", (v) => (term.options = { fontSize: v }))
+    this.#prefs.observe("terminal.appearance.lineHeight", (v) => (term.options = { lineHeight: v }))
+    this.#prefs.observe(
+      "terminal.appearance.cursorBlink",
+      (v) => (term.options = { cursorBlink: v }),
+    )
+    this.#prefs.observe(
+      "terminal.appearance.showScrollbar",
       (v) => (term.options = { scrollbar: { showScrollbar: v } }),
     )
 
@@ -146,38 +158,11 @@ export class XtermView extends TerminalView {
     this.#disposed = true
     this.#term?.dispose()
     this.#term = undefined
-
-    for (const [k, o] of Object.entries(this.#prefsObservers)) {
-      this.#prefsManager.removeObserver(k, o)
-    }
+    this.#io.dispose()
+    this.#prefs.dispose()
   }
 
   #isWebglSupported() {
     return document.createElement("canvas").getContext("webgl2")
-  }
-
-  #observPref<K extends keyof Prefs>(key: K, onChanged: (value: Prefs[K]) => void) {
-    if (this.#prefsObservers[key]) {
-      this.#removeObserver(key)
-    }
-
-    const observer: PreferenceObserver = (value: unknown) => {
-      onChanged(value as Prefs[K])
-    }
-
-    this.#prefsManager.addObserver(key, observer)
-    this.#prefsObservers[key] = observer
-  }
-
-  #removeObserver<K extends keyof Prefs>(key: K) {
-    const observer = this.#prefsObservers[key]
-    if (observer) {
-      this.#prefsManager.removeObserver(key, observer)
-      delete this.#prefsObservers[key]
-    }
-  }
-
-  #getPref<K extends keyof Prefs>(key: K) {
-    return getPref(this.#prefsManager, key)
   }
 }

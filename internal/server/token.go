@@ -11,6 +11,10 @@ import (
 	"path/filepath"
 )
 
+func LoadToken() (string, error) {
+	return getOrCreateToken(false)
+}
+
 func getOrCreateToken(refresh bool) (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {

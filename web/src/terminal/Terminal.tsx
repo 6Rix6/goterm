@@ -2,6 +2,7 @@ import { onCleanup, onMount } from "solid-js"
 import { TerminalSocket, type Status } from "./terminalSocket"
 import { TerminalView, type Disposable } from "./view/terminalView"
 import { delayedScheduler } from "../common/helpers"
+import { usePref } from "../prefs/PrefsProvider"
 
 export type { Status }
 
@@ -13,6 +14,7 @@ type Props = {
 }
 
 export function Terminal(props: Props) {
+  const [bgImage] = usePref("terminal.appearance.backgroundImage")
   let container!: HTMLDivElement
 
   onMount(() => {
@@ -58,5 +60,15 @@ export function Terminal(props: Props) {
     })()
   })
 
-  return <div ref={container} class="term" />
+  return (
+    <div
+      style={{
+        "background-image": bgImage() ? `url(${bgImage()})` : undefined,
+        "background-size": "cover",
+        "background-position": "center",
+      }}
+      ref={container}
+      class="term"
+    />
+  )
 }

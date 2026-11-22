@@ -2,8 +2,12 @@ import { readFile, writeFile } from "node:fs/promises"
 
 const path = "dist/manifest.webmanifest"
 
-console.log(`\nremoveing "theme_color" from ${path}\n`)
+const keys = ["theme_color", "background_color"]
+
+console.log(`\nremoveing ${keys.map((key) => `"${key}"`).join(",")} from ${path}\n`)
 
 const manifest = JSON.parse(await readFile(path, "utf8"))
-delete manifest.theme_color
+for (const key of keys) {
+  delete manifest[key]
+}
 await writeFile(path, JSON.stringify(manifest))

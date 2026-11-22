@@ -1,10 +1,15 @@
 package server
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"goterm/internal/session"
 	"goterm/web"
@@ -53,12 +58,38 @@ func Serve(option *ServerOption) error {
 
 	s.registerWSHandler(mux)
 	s.registerAPI(mux)
-
 	mux.Handle("/", web.WebFsHandler())
 
 	addr := fmt.Sprintf("127.0.0.1:%d", option.Port)
+	srv := &http.Server{
+		Addr:    addr,
+		Handler: mux,
+	}
+
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
 	log.Println("listening on http://" + addr + "/terminal#token=" + token)
-	return http.ListenAndServe(addr, mux)
+
+	errCh := make(chan error, 1)
+	go func() {
+		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			errCh <- err
+		}
+	}()
+
+	select {
+	case err := <-errCh:
+		return err
+	case <-ctx.Done():
+		log.Println("shutting down...")
+	}
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	_ = srv.Shutdown(shutdownCtx)
+
+	return nil
 }
 
 func resolveShell(configured string) string {

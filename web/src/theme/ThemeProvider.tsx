@@ -72,7 +72,10 @@ export function ThemeProvider(props: ParentProps<ThemeProviderProps>) {
     const t = theme()
     const dark = isDark()
     const el = props.target ?? document.documentElement
+
     applyTheme(t, { target: el, dark })
+    applyMissingColors(t, { target: el, dark })
+
     el.style.colorScheme = dark ? "dark" : "light"
     el.dataset.theme = dark ? "dark" : "light"
   })
@@ -94,4 +97,52 @@ export function ThemeProvider(props: ParentProps<ThemeProviderProps>) {
       {props.children}
     </ThemeContext.Provider>
   )
+}
+
+export const applyMissingColors = (
+  theme: Theme,
+  options?: { dark?: boolean; target?: HTMLElement },
+): void => {
+  const target = options?.target ?? document.body
+  const dark = options?.dark ?? false
+
+  const { primary, secondary, tertiary, neutral } = theme.palettes
+
+  const lightColors = new Map<string, string>([
+    ["--md-sys-color-primary-fixed", hexFromArgb(primary.tone(90))],
+    ["--md-sys-color-primary-fixed-dim", hexFromArgb(neutral.tone(80))],
+    ["--md-sys-color-on-primary-fixed", hexFromArgb(primary.tone(10))],
+    ["--md-sys-color-on-primary-fixed-variant", hexFromArgb(primary.tone(30))],
+    ["--md-sys-color-secondary-fixed", hexFromArgb(secondary.tone(90))],
+    ["--md-sys-color-secondary-fixed-dim", hexFromArgb(secondary.tone(80))],
+    ["--md-sys-color-on-secondary-fixed", hexFromArgb(secondary.tone(10))],
+    ["--md-sys-color-on-secondary-fixed-variant", hexFromArgb(secondary.tone(30))],
+    ["--md-sys-color-tertiary-fixed", hexFromArgb(tertiary.tone(90))],
+    ["--md-sys-color-tertiary-fixed-dim", hexFromArgb(tertiary.tone(80))],
+    ["--md-sys-color-on-tertiary-fixed", hexFromArgb(tertiary.tone(10))],
+    ["--md-sys-color-on-tertiary-fixed-variant", hexFromArgb(tertiary.tone(30))],
+    ["--md-sys-color-surface-dim", hexFromArgb(neutral.tone(87))],
+    ["--md-sys-color-surface-bright", hexFromArgb(neutral.tone(98))],
+    ["--md-sys-color-surface-container-lowest", hexFromArgb(neutral.tone(100))],
+    ["--md-sys-color-surface-container-low", hexFromArgb(neutral.tone(96))],
+    ["--md-sys-color-surface-container", hexFromArgb(neutral.tone(94))],
+    ["--md-sys-color-surface-container-high", hexFromArgb(neutral.tone(92))],
+    ["--md-sys-color-surface-container-highest", hexFromArgb(neutral.tone(90))],
+  ])
+
+  const darkColors = new Map<string, string>([
+    ["--md-sys-color-surface-dim", hexFromArgb(neutral.tone(6))],
+    ["--md-sys-color-surface-bright", hexFromArgb(neutral.tone(24))],
+    ["--md-sys-color-surface-container-lowest", hexFromArgb(neutral.tone(4))],
+    ["--md-sys-color-surface-container-low", hexFromArgb(neutral.tone(10))],
+    ["--md-sys-color-surface-container", hexFromArgb(neutral.tone(12))],
+    ["--md-sys-color-surface-container-high", hexFromArgb(neutral.tone(17))],
+    ["--md-sys-color-surface-container-highest", hexFromArgb(neutral.tone(22))],
+  ])
+
+  const colors = !dark ? lightColors : new Map([...lightColors.entries(), ...darkColors.entries()])
+
+  for (const [token, color] of colors) {
+    target.style.setProperty(token, color)
+  }
 }

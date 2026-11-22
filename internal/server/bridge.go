@@ -10,8 +10,6 @@ import (
 
 const writeTimeout = 10 * time.Second
 
-// wsSink は Sink の WebSocket 実装。
-// Send は PTYSession.mu の下でのみ呼ばれるため、書き込みは直列化される。
 type wsSink struct {
 	conn *websocket.Conn
 }
@@ -21,9 +19,20 @@ func (w *wsSink) Send(p []byte) error {
 	return w.conn.WriteMessage(websocket.BinaryMessage, p)
 }
 
-func (w *wsSink) Close() error { return w.conn.Close() }
+func (w *wsSink) Close() error {
+	_ = w.conn.WriteControl(
+		websocket.CloseMessage,
+		websocket.FormatCloseMessage(websocket.CloseGoingAway, "server shutting down"),
+		time.Now().Add(time.Second),
+	)
+	return w.conn.Close()
+}
 
-// pumpWSToPTY はWSが切れるまで入力とresizeをセッションに流す。
+func (w *wsSink) SendControl(v any) error {
+	_ = w.conn.SetWriteDeadline(time.Now().Add(writeTimeout))
+	return w.conn.WriteJSON(v)
+}
+
 func pumpWSToPTY(conn *websocket.Conn, sess *session.PTYSession) {
 	for {
 		msgType, msg, err := conn.ReadMessage()

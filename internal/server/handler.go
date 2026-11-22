@@ -53,8 +53,14 @@ func (s *server) handleWS(w http.ResponseWriter, r *http.Request) {
 		created = true
 	}
 
-	// クライアントへセッションIDを通知(attach前なのでWS書き込みは競合しない)
-	if err := conn.WriteJSON(controlMsg{Type: msgSession, SessionID: sess.ID}); err != nil {
+	// Notify the client of the session ID (WS writes do not conflict since it is before attachment)
+	info := sess.Info()
+	if err := conn.WriteJSON(controlMsg{
+		Type:         msgSession,
+		SessionID:    info.ID,
+		SessionTitle: info.Title,
+		Pinned:       info.Pinned,
+	}); err != nil {
 		if created {
 			_ = s.sessions.Delete(sess.ID)
 		}
