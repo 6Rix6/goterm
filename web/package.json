@@ -1,11 +1,11 @@
 {
   "name": "goterm",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build && node ./remove-theme-color.js",
+    "build": "tsc && vite build && node ./post-build.js",
     "preview": "vite preview"
   },
   "devDependencies": {
@@ -21,6 +21,7 @@
     "@xterm/addon-clipboard": "^0.2.0",
     "@xterm/addon-fit": "^0.11.0",
     "@xterm/addon-unicode11": "^0.9.0",
+    "@xterm/addon-web-links": "^0.12.0",
     "@xterm/addon-webgl": "^0.19.0",
     "@xterm/xterm": "6.1.0-beta.336",
     "ghostty-web": "^0.4.0",

@@ -1,7 +1,8 @@
 import "@material/web/ripple/ripple"
+
 import { type ParentProps, Show } from "solid-js"
 
-export function ListRow(props: ParentProps<{ inactive?: boolean }>) {
+export function ListRow(props: ParentProps<{ inactive?: boolean; id?: string }>) {
   return (
     <li class="list-row" classList={{ inactive: props.inactive }}>
       <Show when={!props.inactive}>

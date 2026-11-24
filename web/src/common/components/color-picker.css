@@ -1,0 +1,31 @@
+.color-input-wrapper {
+  border-radius: 50%;
+  box-sizing: border-box;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--md-sys-color-on-secondary-container);
+  position: relative;
+}
+
+.color-input-overflow {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.color-input-overflow > input {
+  min-width: 200%;
+  min-height: 200%;
+  border: none;
+  outline: none;
+  background: none;
+}
+
+.color-input-wrapper > md-focus-ring {
+  border-radius: 50%;
+  position: absolute;
+}

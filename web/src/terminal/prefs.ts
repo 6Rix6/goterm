@@ -10,10 +10,10 @@ export const TERMINAL_APPEARANCE_DEFAULTS = {
 } as const
 
 export const TERMINAL_KEYBIND_DEFAULTS = {
-  "terminal.keybind.ctrl-v-paste": true as boolean,
-  "terminal.keybind.ctrl-c-copy": true as boolean,
+  "terminal.keybind.ctrl-v-paste": false as boolean,
+  "terminal.keybind.ctrl-c-copy": false as boolean,
 } as const
 
 export const TERMINAL_MOUSE_DEFAULTS = {
-  "terminal.mouse.rightClick": "copyPaste" as RightClickMode,
+  "terminal.mouse.rightClick": "none" as RightClickMode,
 } as const

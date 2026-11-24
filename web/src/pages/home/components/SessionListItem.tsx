@@ -1,10 +1,11 @@
 import type { PTYSession } from "../../../session/sessionManager"
 import { SESSION_ID_KEY } from "../../terminal/TerminalPage"
-import { EditIcon } from "./icons/EditIcon"
-import { PinIcon } from "./icons/PinIcon"
-import { TerminalIcon } from "./icons/TerminalIcon"
+import { EditIcon } from "../../../common/components/icons/EditIcon"
+import { PinIcon } from "../../../common/components/icons/PinIcon"
+import { TerminalIcon } from "../../../common/components/icons/TerminalIcon"
 import { ListRow } from "./ListRow"
-import { IconButton, RowIcon, RowText } from "./RowParts"
+import { RowIcon, RowText } from "./RowParts"
+import { IconButton } from "../../../common/components/IconButton"
 
 type Props = {
   index: number
@@ -18,16 +19,20 @@ export function SessionListItem(props: Props) {
     <ListRow>
       <div class="row full-width">
         <a
-          class="row expanded"
+          class="row expanded nooutline"
           href={`terminal?${SESSION_ID_KEY}=${props.session.id}`}
           target="_blank"
         >
+          <md-focus-ring inward />
           <RowIcon>
             <TerminalIcon variant="contained" />
           </RowIcon>
-          <RowText title={props.session.title ?? "Session"} subtitle={props.session.id} />
+          <RowText
+            title={props.session.title ?? "Terminal"}
+            subtitle={props.session.id.substring(0, 8)}
+          />
         </a>
-        <div class="row">
+        <div class="row row-actions">
           <IconButton title={"Change session title"} onClick={props.onEditTitle}>
             <EditIcon />
           </IconButton>

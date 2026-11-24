@@ -3,6 +3,7 @@ import { TerminalSocket, type Status } from "./terminalSocket"
 import { TerminalView, type Disposable } from "./view/terminalView"
 import { delayedScheduler } from "../common/helpers"
 import { usePref } from "../prefs/PrefsProvider"
+import { WindowTitleManager } from "./windowTitleManager"
 
 export type { Status }
 
@@ -21,6 +22,7 @@ export function Terminal(props: Props) {
     const view = props.createView()
     let socket: TerminalSocket | undefined
     let input: Disposable | undefined
+    let tm: WindowTitleManager | undefined
     let ro: ResizeObserver | undefined
     let disposed = false
 
@@ -28,6 +30,7 @@ export function Terminal(props: Props) {
       disposed = true
       ro?.disconnect()
       input?.dispose()
+      tm?.dispose()
       socket?.close()
       view.dispose()
     })
@@ -49,6 +52,10 @@ export function Terminal(props: Props) {
       })
 
       input = view.onInput((d) => socket!.sendInput(d))
+      tm = new WindowTitleManager(
+        (cb) => view.onTitleChange(cb),
+        (cb) => socket!.onTitleChange(cb),
+      )
 
       const scheduleFit = delayedScheduler(() => {
         const { cols, rows } = view.fit()

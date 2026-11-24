@@ -11,6 +11,7 @@ import {
 import { TerminalIO } from "../io/terminalIO.ts"
 import type { PreferenceManager } from "../../prefs/preferenceManager"
 import { PrefObserverGroup } from "../../prefs/prefObserverGroup.ts"
+import { WebLinksAddon } from "@xterm/addon-web-links"
 
 type XtermViewOptions = TerminalViewOptions & {
   webgl?: boolean
@@ -92,10 +93,6 @@ export class XtermView extends TerminalView {
       },
     })
 
-    term.onTitleChange((title) => {
-      document.title = title
-    })
-
     term.loadAddon(new Unicode11Addon())
     term.open(container)
     term.unicode.activeVersion = "11"
@@ -106,6 +103,8 @@ export class XtermView extends TerminalView {
     if (this.#isWebglSupported() && this.#opts.webgl) {
       term.loadAddon(new WebglAddon())
     }
+
+    term.loadAddon(new WebLinksAddon())
 
     this.#prefs.observe("terminal.appearance.fontSize", (v) => (term.options = { fontSize: v }))
     this.#prefs.observe("terminal.appearance.lineHeight", (v) => (term.options = { lineHeight: v }))
@@ -152,6 +151,10 @@ export class XtermView extends TerminalView {
 
   onInput(cb: (data: string) => void): Disposable {
     return this.#term?.onData(cb) ?? { dispose() {} }
+  }
+
+  onTitleChange(cb: (title: string) => void): Disposable {
+    return this.#term?.onTitleChange(cb) ?? { dispose() {} }
   }
 
   dispose() {

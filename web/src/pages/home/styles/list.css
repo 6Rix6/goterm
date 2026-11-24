@@ -20,14 +20,18 @@
   display: flex;
   flex-direction: column;
   row-gap: 4px;
+  overflow: hidden;
 }
 
 .list-row {
+  max-width: 100%;
   position: relative;
   padding: 0 16px;
   border-radius: 4px;
   background-color: var(--md-sys-color-surface-container);
   transition: background-color 0.2s ease;
+  --md-focus-ring-shape: 4px;
+  overflow: hidden;
   a,
   button {
     padding: 16px 0;
@@ -37,11 +41,15 @@
 .list-row:last-child {
   border-bottom-left-radius: 12px;
   border-bottom-right-radius: 12px;
+  --md-focus-ring-shape-end-start: 12px;
+  --md-focus-ring-shape-end-end: 12px;
 }
 
 .list-section > .list:first-child > .list-row:first-child {
   border-top-left-radius: 12px;
   border-top-right-radius: 12px;
+  --md-focus-ring-shape-start-start: 12px;
+  --md-focus-ring-shape-start-end: 12px;
 }
 
 .list-row.inactive {

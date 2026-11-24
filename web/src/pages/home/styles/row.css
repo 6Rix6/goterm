@@ -9,6 +9,22 @@
 
 .row-icon {
   padding: 0 18px 0 0;
+  flex: none;
+}
+
+.row-actions {
+  flex: none;
+}
+
+.row-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.row-title,
+.row-subtitle {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .row-title {

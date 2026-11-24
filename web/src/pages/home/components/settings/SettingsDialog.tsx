@@ -1,9 +1,16 @@
-import "@material/web/iconbutton/icon-button"
-import "@material/web/icon/icon"
-import "@material/web/ripple/ripple"
-import { type Component, createEffect, createSignal, For, type JSX } from "solid-js"
-import { CloseIcon } from "../icons/CloseIcon"
+import {
+  type Component,
+  createEffect,
+  createSignal,
+  For,
+  type JSX,
+  onCleanup,
+  onMount,
+} from "solid-js"
+import { CloseIcon } from "../../../../common/components/icons/CloseIcon"
 import { Dynamic } from "solid-js/web"
+import { MenuIcon } from "../../../../common/components/icons/MenuIcon"
+import { IconButton } from "../../../../common/components/IconButton"
 
 export type SettingsTab = {
   id: string
@@ -21,12 +28,39 @@ type Props = {
 export function SettingsDialog(props: Props) {
   let dialog!: HTMLDialogElement
   const [activeId, setActiveId] = createSignal(props.tabs[0]?.id)
+  const [drawerOpen, setDrawerOpen] = createSignal(false)
+  let nav!: HTMLElement
+
+  const openDrawer = () => {
+    setDrawerOpen(true)
+    queueMicrotask(() => {
+      nav.querySelector<HTMLElement>("md-list-item.active")?.focus()
+    })
+  }
+
+  const closeDrawer = () => {
+    setDrawerOpen(false)
+  }
 
   const active = () => props.tabs.find((t) => t.id === activeId())
 
+  onMount(() => {
+    const mql = window.matchMedia("(min-width: 681px)")
+    const handler = (e: MediaQueryListEvent) => {
+      if (e.matches) setDrawerOpen(false)
+    }
+    mql.addEventListener("change", handler)
+    onCleanup(() => mql.removeEventListener("change", handler))
+  })
+
   createEffect(() => {
-    if (props.open && !dialog.open) dialog.showModal()
-    else if (!props.open && dialog.open) dialog.close()
+    if (props.open && !dialog.open) {
+      dialog.showModal()
+    } else if (!props.open && dialog.open) {
+      dialog.close()
+      setActiveId(props.tabs[0]?.id)
+      setDrawerOpen(false)
+    }
   })
 
   return (
@@ -38,37 +72,61 @@ export function SettingsDialog(props: Props) {
       onClick={(e) => {
         if (e.target === dialog) props.onClose()
       }}
+      onKeyDown={(e) => {
+        if (e.key === "Escape" && drawerOpen()) {
+          e.preventDefault()
+          closeDrawer()
+        }
+      }}
     >
       <div class="settings-dialog-body">
-        <nav class="settings-nav" aria-label="Settings">
+        <div class="settings-scrim" classList={{ open: drawerOpen() }} onClick={closeDrawer} />
+
+        <nav
+          ref={nav}
+          class="settings-nav"
+          classList={{ open: drawerOpen() }}
+          aria-label="Settings"
+        >
           <h2 id="settings-dialog-title" class="settings-nav-title">
             Settings
           </h2>
-          <For each={props.tabs}>
-            {(tab) => (
-              <button
-                type="button"
-                class="settings-nav-item"
-                classList={{ active: tab.id === activeId() }}
-                aria-current={tab.id === activeId() ? "page" : undefined}
-                onClick={() => setActiveId(tab.id)}
-              >
-                <md-ripple />
-                <span class="settings-nav-icon">{tab.icon}</span>
-                <span class="settings-nav-label">{tab.label}</span>
-              </button>
-            )}
-          </For>
+          <md-list class="nav" role="menubar" aria-label="List of setting items">
+            <For each={props.tabs}>
+              {(tab) => {
+                const selected = () => tab.id === activeId()
+                return (
+                  <md-list-item
+                    type="button"
+                    onclick={() => {
+                      setActiveId(tab.id)
+                      closeDrawer()
+                    }}
+                    aria-current={selected() ? "page" : undefined}
+                    aria-selected={selected().toString()}
+                    classList={{ active: selected() }}
+                    role="menuitem"
+                  >
+                    <md-icon slot="start">{tab.icon}</md-icon>
+                    <div slot="headline">{tab.label}</div>
+                  </md-list-item>
+                )
+              }}
+            </For>
+          </md-list>
         </nav>
 
-        <div class="settings-content">
+        <div class="settings-content" inert={drawerOpen()}>
           <header class="settings-content-header">
+            <div class="settings-nav-modal-button">
+              <IconButton title="Open navigation menu" onClick={openDrawer}>
+                <MenuIcon size={20} />
+              </IconButton>
+            </div>
             <h3>{active()?.label}</h3>
-            <md-icon-button title="Close" onclick={props.onClose}>
-              <md-icon>
-                <CloseIcon />
-              </md-icon>
-            </md-icon-button>
+            <IconButton title="Close dialog" onClick={props.onClose}>
+              <CloseIcon size={20} />
+            </IconButton>
           </header>
           <div class="settings-content-scroll">
             <Dynamic component={active()?.component} />

@@ -36,7 +36,6 @@ export class SessionManager {
         throw new Error(`GET /api/sessions failed: ${res.status} ${res.statusText}`)
       }
       const body = (await res.json()) as { sessions: PTYSessionDTO[] }
-      console.log(body)
       return body.sessions.map(toSession)
     })
   }

@@ -24,5 +24,8 @@ export abstract class TerminalView {
   /** Subscribes to user input */
   abstract onInput(cb: (data: string) => void): Disposable
 
+  /** Subscribes to title chnage */
+  abstract onTitleChange(cb: (title: string) => void): Disposable
+
   abstract dispose(): void
 }

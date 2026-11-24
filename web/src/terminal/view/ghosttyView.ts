@@ -67,6 +67,10 @@ export class GhosttyView extends TerminalView {
     return this.#term?.onData(cb) ?? { dispose() {} }
   }
 
+  onTitleChange(cb: (title: string) => void): Disposable {
+    return this.#term?.onTitleChange(cb) ?? { dispose() {} }
+  }
+
   dispose() {
     this.#disposed = true
     this.#term?.dispose()

@@ -1,6 +1,7 @@
 import { defineConfig } from "vite"
 import { VitePWA } from "vite-plugin-pwa"
 import solid from "vite-plugin-solid"
+import pkg from "./package.json" with { type: "json" }
 
 export default defineConfig({
   server: {
@@ -59,4 +60,7 @@ export default defineConfig({
       },
     }),
   ],
+  define: {
+    __APP_VERSION__: JSON.stringify(pkg.version),
+  },
 })

@@ -17,10 +17,22 @@ h3 {
   margin: 0;
 }
 
+code {
+  background-color: color-mix(in srgb, var(--md-sys-color-secondary-container) 50%, transparent);
+  border-radius: 6px;
+  padding: 0.2em 0.4em;
+  white-space: break-spaces;
+  font-size: 85%;
+}
+
 .full-width {
   width: 100%;
 }
 
 .nowrap {
   white-space: nowrap;
+}
+
+.nooutline {
+  outline: none;
 }

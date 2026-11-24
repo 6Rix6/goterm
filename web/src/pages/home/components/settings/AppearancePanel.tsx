@@ -1,97 +1,137 @@
-import "@material/web/select/select-option"
-import "@material/web/select/outlined-select"
-import "@material/web/button/filled-tonal-button"
+import "@material/web/labs/segmentedbuttonset/outlined-segmented-button-set"
+import "@material/web/labs/segmentedbutton/outlined-segmented-button"
 
-import { useTheme, type ThemeMode } from "../../../../theme/ThemeProvider"
-import type { MdOutlinedSelect } from "@material/web/all"
+import { useTheme } from "../../../../theme/ThemeProvider"
 import { usePref } from "../../../../prefs/PrefsProvider"
-import { Show } from "solid-js"
+import { DarkModeIcon } from "../../../../common/components/icons/DarkModeIcon"
+import { BrightnessMediumIcon } from "../../../../common/components/icons/BrightnessMediumIcon"
+import { LightModeIcon } from "../../../../common/components/icons/LightModeIcon"
+import { ColorPicker } from "../../../../common/components/ColorPicker"
+import { ImagePicker } from "../../../../common/components/ImagePicker"
+import type { MdOutlinedSelect } from "@material/web/all"
+import { For } from "solid-js"
+import { SettingsItem, SettingsGroup } from "./SettingsComponents"
 
 export function AppearancePanel() {
-  const { seed, setSeed, mode, setMode } = useTheme()
-
   return (
     <>
-      <div class="settings-group" data-label="Theme">
-        <div class="settings-item">
-          <div class="column">
-            <div class="row-title">Theme mode</div>
-          </div>
-          <md-outlined-select
-            value={mode()}
-            onchange={(e) => setMode((e.currentTarget as MdOutlinedSelect).value as ThemeMode)}
-          >
-            <md-select-option value="system">
-              <div slot="headline">Follow system</div>
-            </md-select-option>
-            <md-select-option value="dark">
-              <div slot="headline">Dark</div>
-            </md-select-option>
-            <md-select-option value="light">
-              <div slot="headline">Light</div>
-            </md-select-option>
-          </md-outlined-select>
-        </div>
-        <div class="settings-item">
-          <div class="column">
-            <div class="row-title">Theme color</div>
-          </div>
-          <span class="input-wrapper">
-            <div class="overflow">
-              <input type="color" value={seed()} onInput={(e) => setSeed(e.currentTarget.value)} />
-            </div>
-          </span>
-        </div>
-      </div>
-      <div class="settings-group" data-label="Terminal">
-        <div class="settings-item">
-          <div class="column">
-            <div class="row-title">Background image</div>
-          </div>
+      <SettingsGroup label="Theme">
+        <SettingsItem title={"Theme Mode"}>
+          <ThemeSelector />
+        </SettingsItem>
+        <SettingsItem title={"Theme Color"}>
+          <ThemeColorPicker />
+        </SettingsItem>
+        <SettingsItem title={"Terminal Background Image"}>
           <BackgroundImagePicker />
-        </div>
-      </div>
+        </SettingsItem>
+      </SettingsGroup>
+      <SettingsGroup label="Text">
+        <SettingsItem title={"Font Size"}>
+          <FontSizeSelector />
+        </SettingsItem>
+        <SettingsItem title={"Line Height"}>
+          <LineHeightSelector />
+        </SettingsItem>
+      </SettingsGroup>
     </>
   )
 }
 
+function ThemeSelector() {
+  const { mode, setMode } = useTheme()
+
+  return (
+    <div style={{ width: "256px" }}>
+      <md-outlined-segmented-button-set aria-label="Theme mode">
+        <md-outlined-segmented-button
+          title="Dark"
+          selected={mode() === "dark"}
+          onclick={() => setMode("dark")}
+        >
+          <md-icon slot="icon">
+            <DarkModeIcon size={18} />
+          </md-icon>
+        </md-outlined-segmented-button>
+        <md-outlined-segmented-button
+          title="Follow system"
+          selected={mode() === "system"}
+          onclick={() => setMode("system")}
+        >
+          <md-icon slot="icon">
+            <BrightnessMediumIcon size={18} />
+          </md-icon>
+        </md-outlined-segmented-button>
+        <md-outlined-segmented-button
+          title="Light"
+          selected={mode() === "light"}
+          onclick={() => setMode("light")}
+        >
+          <md-icon slot="icon">
+            <LightModeIcon size={18} />
+          </md-icon>
+        </md-outlined-segmented-button>
+      </md-outlined-segmented-button-set>
+    </div>
+  )
+}
+
+function ThemeColorPicker() {
+  const { seed, setSeed } = useTheme()
+
+  return <ColorPicker value={seed()} onInput={(e) => setSeed(e.currentTarget.value)} />
+}
+
 function BackgroundImagePicker() {
   const [bgImage, setBgImage] = usePref("terminal.appearance.backgroundImage")
-  let inputRef!: HTMLInputElement
 
-  const openPicker = () => inputRef.click()
+  return <ImagePicker image={bgImage()} onChanged={(img) => setBgImage(img)} />
+}
 
-  const handleFileChange = (e: Event) => {
-    const target = e.target as HTMLInputElement
-    const file = target.files?.[0]
-    if (!file) return
+function FontSizeSelector() {
+  const [fontSize, setFontSize] = usePref("terminal.appearance.fontSize")
 
-    const reader = new FileReader()
-    reader.onload = () => {
-      setBgImage(reader.result as string)
-    }
-    reader.readAsDataURL(file)
-
-    target.value = ""
-  }
-
-  const handleButtonClick = () => {
-    if (bgImage()) {
-      setBgImage(null)
-    } else {
-      openPicker()
+  const handleChange = (e: Event) => {
+    const target = e.target as MdOutlinedSelect
+    const value = Number(target.value)
+    if (value) {
+      setFontSize(value)
     }
   }
 
   return (
-    <div class="row">
-      <input ref={inputRef} type="file" accept="image/*" hidden onChange={handleFileChange} />
-      <Show when={bgImage()}>
-        {(base64) => <img src={base64()} onClick={openPicker} style={{ cursor: "pointer" }} />}
-      </Show>
-      <md-filled-tonal-button onclick={handleButtonClick}>
-        {bgImage() ? "Delete" : "Select"}
-      </md-filled-tonal-button>
-    </div>
+    <md-outlined-select value={fontSize().toString()} onchange={handleChange}>
+      <For each={Array.from({ length: 11 }, (_, i) => i + 10)}>
+        {(i) => (
+          <md-select-option selected={fontSize() === i} value={i.toString()}>
+            <div slot="headline">{i}</div>
+          </md-select-option>
+        )}
+      </For>
+    </md-outlined-select>
+  )
+}
+
+function LineHeightSelector() {
+  const [lineHeight, setLineHeight] = usePref("terminal.appearance.lineHeight")
+
+  const handleChange = (e: Event) => {
+    const target = e.target as MdOutlinedSelect
+    const value = Number(target.value)
+    if (value) {
+      setLineHeight(value)
+    }
+  }
+
+  return (
+    <md-outlined-select value={lineHeight().toString()} onchange={handleChange}>
+      <For each={Array.from({ length: 11 }, (_, i) => Math.round((1 + i * 0.1) * 10) / 10)}>
+        {(i) => (
+          <md-select-option selected={lineHeight() === i} value={i.toString()}>
+            <div slot="headline">{i}</div>
+          </md-select-option>
+        )}
+      </For>
+    </md-outlined-select>
   )
 }

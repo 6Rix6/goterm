@@ -1,17 +1,12 @@
 import { createEffect, createSignal, ErrorBoundary, For, on, Show, Suspense } from "solid-js"
 import { TokenManager } from "../../../auth/tokenManager"
 import { SessionManager, type PTYSession } from "../../../session/sessionManager"
-import { RefreshIcon } from "./icons/RefreshIcon"
-import { TerminalIcon } from "./icons/TerminalIcon"
+import { RefreshIcon } from "../../../common/components/icons/RefreshIcon"
+import { TerminalIcon } from "../../../common/components/icons/TerminalIcon"
 import { ListSection } from "./ListSection"
-import { IconButton } from "./RowParts"
 import { SessionListItem } from "./SessionListItem"
 import { StatusRow } from "./StatusRow"
-
-import "@material/web/dialog/dialog"
-import "@material/web/button/filled-button"
-import "@material/web/button/filled-tonal-button"
-import "@material/web/textfield/outlined-text-field"
+import { IconButton } from "../../../common/components/IconButton";
 import type { MdOutlinedTextField } from "@material/web/common"
 
 export function SessionList() {
@@ -98,7 +93,7 @@ function SessionTitleEditDialog(props: {
   }
 
   return (
-    <md-dialog open={props.open} onclose={() => props.onCancel()}>
+    <md-dialog quick open={props.open} onclose={() => props.onCancel()}>
       <div slot="headline">Change Title</div>
       <div slot="content">
         <md-outlined-text-field

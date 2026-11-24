@@ -1,3 +1,5 @@
+import type { Disposable } from "./view/terminalView"
+
 export type Status = "connecting" | "connected" | "disconnected" | "unauthorized"
 
 type Options = {
@@ -17,6 +19,7 @@ interface ControlMessage {
   type: MessageType
   token?: string
   session_id?: string
+  session_title?: string
   pinned?: boolean
   cols?: number
   rows?: number
@@ -28,15 +31,17 @@ const MAX_DELAY_MS = 10_000
 export class TerminalSocket {
   #ws!: WebSocket
   #encoder = new TextEncoder()
-  #sessionId?: string
   #opts: Options
   #closedByUser = false
   #attempt = 0
   #retryTimer?: ReturnType<typeof setTimeout>
+  #titleListeners = new Set<(title: string | undefined) => void>()
+
+  sessionId?: string
 
   constructor(opts: Options) {
     this.#opts = opts
-    this.#sessionId = opts.sessionId
+    this.sessionId = opts.sessionId
     this.#connect()
   }
 
@@ -51,7 +56,7 @@ export class TerminalSocket {
     ws.onopen = () => {
       this.#attempt = 0
       const { cols, rows } = opts.getSize()
-      this.#sendJson({ type: "init", token: opts.token, cols, rows, session_id: this.#sessionId })
+      this.#sendJson({ type: "init", token: opts.token, cols, rows, session_id: this.sessionId })
       opts.onStatus?.("connected")
       opts.onOpen?.()
     }
@@ -60,8 +65,8 @@ export class TerminalSocket {
       if (typeof e.data == "string") {
         try {
           const raw: unknown = JSON.parse(e.data)
-          if (isControlMessage(raw) && raw.type == "session") {
-            this.#sessionId = raw.session_id
+          if (isControlMessage(raw)) {
+            this.#handleSessionControl(raw)
           }
         } catch {}
       } else {
@@ -88,6 +93,21 @@ export class TerminalSocket {
     this.#retryTimer = setTimeout(() => this.#connect(), delay)
   }
 
+  #handleSessionControl(msg: ControlMessage) {
+    if (msg.type !== "session") return
+    console.log(msg)
+    this.sessionId = msg.session_id
+
+    const title = msg.session_title
+    for (const cb of this.#titleListeners) {
+      cb(title)
+    }
+  }
+
+  #sendJson(msg: ControlMessage) {
+    if (this.isOpen) this.#ws.send(JSON.stringify(msg))
+  }
+
   get isOpen(): boolean {
     return this.#ws.readyState === WebSocket.OPEN
   }
@@ -100,14 +120,20 @@ export class TerminalSocket {
     this.#sendJson({ type: "resize", cols, rows })
   }
 
-  close() {
-    this.#closedByUser = true
-    clearTimeout(this.#retryTimer)
-    this.#ws.close()
+  onTitleChange(cb: (title: string | undefined) => void): Disposable {
+    this.#titleListeners.add(cb)
+    return {
+      dispose: () => {
+        this.#titleListeners.delete(cb)
+      },
+    }
   }
 
-  #sendJson(msg: ControlMessage) {
-    if (this.isOpen) this.#ws.send(JSON.stringify(msg))
+  close() {
+    this.#closedByUser = true
+    this.#titleListeners.clear()
+    clearTimeout(this.#retryTimer)
+    this.#ws.close()
   }
 }
 
@@ -141,7 +167,11 @@ function isControlMessage(data: unknown): data is ControlMessage {
     return false
   }
 
-  if (obj.pinned !== undefined && typeof obj.session_id !== "boolean") {
+  if (obj.session_title !== undefined && typeof obj.session_title !== "string") {
+    return false
+  }
+
+  if (obj.pinned !== undefined && typeof obj.pinned !== "boolean") {
     return false
   }
 
